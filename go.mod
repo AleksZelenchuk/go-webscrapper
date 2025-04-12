@@ -1,4 +1,4 @@
-module awesomeProject
+module github.com/AleksZelenchuk/go-webscrapper
 
 go 1.24.2
 
