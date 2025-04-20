@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/AleksZelenchuk/go-webscrapper/api"
 	"github.com/gocolly/colly/v2"
 	"strings"
 )
@@ -12,19 +13,6 @@ type VisitedLinks struct {
 	Total int
 }
 
-type Collection struct {
-	TotalCount int
-	Data       []CollectedData
-}
-
-type CollectedData struct {
-	Url    string            `json:"links"`
-	Title  string            `json:"title"`
-	Sku    string            `json:"sku"`
-	Price  string            `json:"price"`
-	Params map[string]string `json:"params"`
-}
-
 const (
 	httpPart         = "http"
 	maxNumberOfPages = 5
@@ -32,8 +20,15 @@ const (
 
 func main() {
 	visited := VisitedLinks{}
-	visited.addToVisit("https://example.com/", false)
+	visited.addToVisit("https://xzero.in.ua/masazhni-krisla-xzero/masazhne-krislo-xzero-x22-sl-premium-blue", false)
 	visited.parsePagesContent()
+}
+
+func getAllowedDomains() []string {
+	allowedDomains := []string{
+		"xzero.in.ua",
+	}
+	return allowedDomains
 }
 
 // Go through all pages marked for visiting and parse its content
@@ -43,8 +38,8 @@ func (v *VisitedLinks) parsePagesContent() {
 		fmt.Println("There is no unvisited links.")
 		return
 	}
-	c := colly.NewCollector(colly.AllowedDomains("example.com"))
-	collection := Collection{
+	c := colly.NewCollector(colly.AllowedDomains(getAllowedDomains()...))
+	collection := api.Collection{
 		TotalCount: 0,
 	}
 
@@ -64,7 +59,13 @@ func (v *VisitedLinks) parsePagesContent() {
 	v.parsePagesContent()
 
 	for _, data := range collection.Data {
+		rowId, err := api.CreateProductFromCollectionItem(&data)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 		fmt.Println(
+			rowId,
 			data.Url,
 			data.Title,
 			data.Sku,
@@ -74,8 +75,8 @@ func (v *VisitedLinks) parsePagesContent() {
 	}
 }
 
-func (v *VisitedLinks) VisitPage(c *colly.Collector, link string) (error, *CollectedData) {
-	cd := &CollectedData{}
+func (v *VisitedLinks) VisitPage(c *colly.Collector, link string) (error, *api.CollectedData) {
+	cd := &api.CollectedData{}
 	cd.Url = link
 
 	shouldSkipPage := true
